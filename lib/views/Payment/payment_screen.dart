@@ -1,16 +1,27 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app/controller/radio_button.dart';
 import 'package:e_commerce_app/core/colors.dart';
-import 'package:e_commerce_app/views/Bottom%20nav/bottom_nav.dart';
-import 'package:e_commerce_app/views/Home/home_screen.dart';
+import 'package:e_commerce_app/model/Firebase/orders.dart';
+import 'package:e_commerce_app/views/Payment/widgets/payment_success.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+import '../Bottom nav/bottom_nav.dart';
 
 class PaymentScreen extends StatelessWidget {
-  const PaymentScreen({Key? key}) : super(key: key);
+  const PaymentScreen({required this.shippingAdress, Key? key})
+      : super(key: key);
+
+  final Map shippingAdress;
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context).size;
+
+    final controller = Get.put(RadioButtonController());
 
     return Scaffold(
       appBar: AppBar(
@@ -18,7 +29,7 @@ class PaymentScreen extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
             onPressed: () {},
-            icon: Icon(
+            icon: const Icon(
               CupertinoIcons.back,
               color: Colors.black,
             )),
@@ -38,54 +49,61 @@ class PaymentScreen extends StatelessWidget {
                 vertical: mediaQuery.height * 0.03,
                 horizontal: mediaQuery.height * 0.02,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Payment Methods',
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 20),
-                  ),
-                  RadioListTile(
-                    value: 0,
-                    activeColor: themeColor,
-                    groupValue: 1,
-                    onChanged: (value) {},
-                    title: Text(
-                      'Cash On Delivery',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
+              child: GetBuilder<RadioButtonController>(builder: (controller) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Payment Methods',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w500, fontSize: 20),
+                    ),
+                    RadioListTile<int>(
+                      value: 0,
+                      activeColor: themeColor,
+                      groupValue: controller.selectedPayment,
+                      onChanged: (int? value) {
+                        controller.changePaymentMehod(value!);
+                      },
+                      title: const Text(
+                        'Cash On Delivery',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                  RadioListTile(
-                    value: 1,
-                    activeColor: themeColor,
-                    groupValue: 1,
-                    onChanged: (value) {},
-                    title: Text(
-                      'Online Payment',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
+                    RadioListTile(
+                      value: 1,
+                      activeColor: themeColor,
+                      groupValue: controller.selectedPayment,
+                      onChanged: (int? value) {
+                        controller.changePaymentMehod(value!);
+                      },
+                      title: const Text(
+                        'Online Payment',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  )
-                ],
-              ),
+                    )
+                  ],
+                );
+              }),
             ),
-            Divider(
+            const Divider(
               thickness: 3,
               height: 1,
             ),
             buildPriceDescription(context),
-            Divider(
+            const Divider(
               thickness: 3,
               height: 1,
             ),
             Image.asset(
               'assets/images/istockphoto-1066818018-612x612.jpg',
             ),
-            buildCheckOutButton(context),
-            SizedBox(
+            buildCheckOutButton(context, controller),
+            const SizedBox(
               height: 10,
             ),
           ],
@@ -97,32 +115,81 @@ class PaymentScreen extends StatelessWidget {
 // =========================================================================================
 // This method is used to show the sign in button.
 
-  ElevatedButton buildCheckOutButton(BuildContext context) {
+  buildCheckOutButton(BuildContext context, RadioButtonController controller) {
     final mediaQuery = MediaQuery.of(context).size;
-    return ElevatedButton(
-      style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(themeColor),
-      ),
-      onPressed: () {
-        print('checkout');
-        Get.to(BottomNavBar());
+    return StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('Users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .collection('Cart')
+            .snapshots(),
+        builder: (
+          context,
+          AsyncSnapshot<QuerySnapshot> snapshot,
+        ) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
 
-        // Get.to(BottomNavBar(), transition: Transition.downToUp);
-      },
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: mediaQuery.height * 0.017,
-          horizontal: mediaQuery.height * 0.12,
-        ),
-        child: const Text(
-          'Confirm',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
+          final docs = snapshot.data!.docs;
+
+          return ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all(themeColor),
+            ),
+            onPressed: () {
+              if (controller.selectedPayment == 0) {
+                Get.off(
+                  PaymentSuccess(),
+                  transition: Transition.fade,
+                );
+
+                for (var i = 0; i < docs.length; i++) {
+                  Orders orders = Orders(
+                    productName: docs[i]['productName'],
+                    sizeOrVarient: docs[i]['sizeOrVarient'],
+                    quantity: docs[i]['quantity'],
+                    price: docs[i]['price'],
+                    photoUrl: docs[i]['imageUrl'],
+                    orderDetails: {
+                      'ordered': true,
+                      'date': DateFormat.yMMMd().format(
+                        DateTime.now(),
+                      ),
+                    },
+                    shippingAddress: shippingAdress,
+                    deliverdDetails: {'delivered': false, 'date': ''},
+                    shippedDetails: {'shipped': false, 'date': ''},
+                    paymentMethod: 'Cash On Delivery',
+                    totalPrice: docs[i]['totalPrice'],
+                  );
+                  Orders.placeOrder(
+                    orders,
+                    docId: docs[i].id,
+                    quantity: docs[i]['quantity'],
+                  );
+                }
+              }
+
+              // }
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: mediaQuery.height * 0.017,
+                horizontal: mediaQuery.height * 0.12,
+              ),
+              child: const Text(
+                'Confirm',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          );
+        });
   }
 
 // ========================================================================================================

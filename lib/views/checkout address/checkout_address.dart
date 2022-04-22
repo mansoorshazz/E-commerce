@@ -20,7 +20,7 @@ class CheckOutAddress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(RadioButtonController());
+    final controller = Get.put(RadioButtonController());
 
     final mediaQuery = MediaQuery.of(context).size;
     final addressStyle = TextStyle(
@@ -65,7 +65,7 @@ class CheckOutAddress extends StatelessWidget {
               children: [
                 buildAddAddressbutton(mediaQuery),
                 buildAddress(addressStyle, mediaQuery, snapshot),
-                buildConfirmButton(context),
+                buildConfirmButton(context, snapshot, controller),
                 SizedBox(
                   height: 10,
                 )
@@ -76,7 +76,11 @@ class CheckOutAddress extends StatelessWidget {
   }
 
 // ================================================================================
-  ElevatedButton buildConfirmButton(BuildContext context) {
+  ElevatedButton buildConfirmButton(
+    BuildContext context,
+    AsyncSnapshot<QuerySnapshot> snapshot,
+    RadioButtonController controller,
+  ) {
     final mediaQuery = MediaQuery.of(context).size;
 
     return ElevatedButton(
@@ -85,8 +89,20 @@ class CheckOutAddress extends StatelessWidget {
             MaterialStateProperty.all(HexColor('#EF0030').withOpacity(0.8)),
       ),
       onPressed: () {
+        final doc = snapshot.data!.docs[controller.selectedIndex];
+
+        Map shippingAdress = {
+          'name': doc['userName'],
+          'phoneNumber': doc['phoneNumber'],
+          'city': doc['city'],
+          'pincode': doc['pincode'],
+          'state': doc['state'],
+        };
+
         Get.to(
-          PaymentScreen(),
+          PaymentScreen(
+            shippingAdress: shippingAdress,
+          ),
           transition: Transition.leftToRight,
         );
       },
@@ -156,7 +172,7 @@ class CheckOutAddress extends StatelessWidget {
             padding: const EdgeInsets.only(left: 10, right: 10),
             child: GetBuilder<RadioButtonController>(builder: (controller) {
               return InkWell(
-                onTap: (){
+                onTap: () {
                   controller.changeRadioButton(index);
                 },
                 child: Column(

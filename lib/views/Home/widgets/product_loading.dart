@@ -32,8 +32,8 @@ class ProductLoadingWidget extends StatelessWidget {
             // final doc = snapshot.data!.docs[index];
 
             return Shimmer.fromColors(
-              baseColor: Colors.white30,
-              highlightColor: Colors.white60,
+              baseColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade100,
               child: Card(
                 child: Container(
                   decoration: BoxDecoration(

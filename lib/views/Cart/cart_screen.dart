@@ -239,7 +239,7 @@ class CartScreen extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () {
-                    if (data['quantity'] == 10) {
+                    if (data['quantity'] == 5) {
                       CoolAlert.show(
                         context: context,
                         type: CoolAlertType.warning,

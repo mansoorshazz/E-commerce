@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:badges/badges.dart';
 import 'package:clay_containers/clay_containers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -60,10 +62,10 @@ class HomeScreen extends StatelessWidget {
                 buildCategories(
                   context,
                 ),
-                // buildBanner(
-                //   context,
-                //   homecontroller,
-                // ),
+                buildBanner(
+                  context,
+                  homecontroller,
+                ),
                 buildProducts(
                   context,
                   homecontroller,
@@ -400,8 +402,8 @@ class HomeScreen extends StatelessWidget {
           );
         },
       );
-    } catch (e) {
-      print('error thrown jfld');
+    } on SocketException catch (e) {
+      print(e.message);
     }
   }
 

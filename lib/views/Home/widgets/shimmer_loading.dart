@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -11,8 +10,8 @@ class LoadingWidgetShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context).size;
     return Shimmer.fromColors(
-      baseColor: Colors.white24,
-      highlightColor: Colors.grey.shade200,
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
       child: Row(
         children: [
           ...List.generate(
@@ -24,10 +23,10 @@ class LoadingWidgetShimmer extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(100)),
                 child: Container(
-                  width: mediaQuery.width * 0.22,
+                  width: mediaQuery.width * 0.19,
                   height: mediaQuery.width * 0.19,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    // color: Colors.white,
                     shape: BoxShape.circle,
                   ),
                 ),
