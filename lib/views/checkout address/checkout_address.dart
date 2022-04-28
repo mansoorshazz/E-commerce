@@ -2,6 +2,7 @@ import 'package:clay_containers/clay_containers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/controller/radio_button.dart';
 import 'package:e_commerce_app/core/colors.dart';
+import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/views/My%20Address/Add%20address/add_address.dart';
 import 'package:e_commerce_app/views/My%20Address/Edit%20address/edit_address.dart';
 import 'package:e_commerce_app/views/Payment/payment_screen.dart';
@@ -14,9 +15,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hexcolor/hexcolor.dart';
 
 class CheckOutAddress extends StatelessWidget {
-  CheckOutAddress({Key? key}) : super(key: key);
+  CheckOutAddress({
+    Key? key,
+    this.productId,
+    this.price,
+    this.quantity,
+    required this.cartProductDetails,
+  }) : super(key: key);
 
   final userId = FirebaseAuth.instance.currentUser!.uid;
+
+  String? productId;
+  int? price;
+  int? quantity;
+  CartProductDetails cartProductDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -48,30 +60,48 @@ class CheckOutAddress extends StatelessWidget {
           ),
         ),
       ),
-      body: StreamBuilder(
-          stream: FirebaseFirestore.instance
-              .collection('Users')
-              .doc(userId)
-              .collection('Addresses')
-              .snapshots(),
-          builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+      body: Column(
+        children: [
+          buildAddAddressbutton(mediaQuery),
+          StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(userId)
+                  .collection('Addresses')
+                  .snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
 
-            return Column(
-              children: [
-                buildAddAddressbutton(mediaQuery),
-                buildAddress(addressStyle, mediaQuery, snapshot),
-                buildConfirmButton(context, snapshot, controller),
-                SizedBox(
-                  height: 10,
-                )
-              ],
-            );
-          }),
+                if (snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No saved addresses',
+                    ),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.active) {
+                  return Expanded(
+                    child: Column(
+                      children: [
+                        buildAddress(addressStyle, mediaQuery, snapshot),
+                        buildConfirmButton(context, snapshot, controller),
+                        SizedBox(
+                          height: 10,
+                        )
+                      ],
+                    ),
+                  );
+                }
+
+                return Container();
+              }),
+        ],
+      ),
     );
   }
 
@@ -102,6 +132,10 @@ class CheckOutAddress extends StatelessWidget {
         Get.to(
           PaymentScreen(
             shippingAdress: shippingAdress,
+            productId: productId,
+            price: price,
+            quantity: quantity,
+            cartProductDetails: cartProductDetails,
           ),
           transition: Transition.leftToRight,
         );

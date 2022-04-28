@@ -15,10 +15,18 @@ import 'widgets/status_bar_content.dart';
 class OrderDetailsScreen extends StatelessWidget {
   const OrderDetailsScreen({
     Key? key,
-    required this.docId,
+    required this.productId,
+    required this.quantity,
+    required this.address,
+    required this.totalPrice,
+    required this.documentId,
   }) : super(key: key);
 
-  final String docId;
+  final String productId;
+  final int quantity;
+  final Map address;
+  final int totalPrice;
+  final String documentId;
 
   @override
   Widget build(BuildContext context) {
@@ -30,43 +38,55 @@ class OrderDetailsScreen extends StatelessWidget {
       letterSpacing: 0.5,
     );
 
+    print(quantity);
+
+    var formatter = NumberFormat('#,##,000');
+
+    String productPrice = formatter.format(totalPrice / quantity);
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          onPressed: () {
-            Get.back();
-          },
-          icon: const Icon(
-            CupertinoIcons.back,
-            color: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            onPressed: () {
+              Get.back();
+            },
+            icon: const Icon(
+              CupertinoIcons.back,
+              color: Colors.black,
+            ),
           ),
-        ),
-        title: Text(
-          'Order Details',
-          style: TextStyle(
-            color: themeColor,
+          title: Text(
+            'Order Details',
+            style: TextStyle(
+              color: themeColor,
+            ),
           ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: StreamBuilder(
+        body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .collection('Users')
-              .doc(FirebaseAuth.instance.currentUser!.uid)
               .collection('Orders')
-              .doc(docId)
+              .doc(documentId)
               .snapshots(),
           builder: (context, AsyncSnapshot snapshot) {
-            final doc = snapshot.data;
-
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const LoadingShimmer();
             }
 
-            var formatter = NumberFormat('#,##,000');
+            final orderMap = snapshot.data;
 
-            String convertPrice = formatter.format(doc['price']);
+            bool isOrdered = orderMap['orderDetails']['ordered'];
+
+            bool isShipped = orderMap['shippingDetails']['shipped'];
+
+            bool isDelivered = orderMap['deliveredDetails']['delivered'];
+
+            final orderdate = DateTime.fromMillisecondsSinceEpoch(
+              orderMap['orderDetails']['date'],
+            );
+
+            final formatedOrderDate = DateFormat.yMMMd().format(orderdate);
 
             return ListView(
               physics: BouncingScrollPhysics(),
@@ -78,106 +98,39 @@ class OrderDetailsScreen extends StatelessWidget {
                     bottom: 12,
                   ),
                   child: Text(
-                    'Order ID - ${docId}',
-                    style: TextStyle(
+                    'Order ID - ${documentId}',
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.black26,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
-                // SizedBox(height: 10,),
                 Divider(
                   color: Colors.grey.withOpacity(0.2),
                   thickness: 4,
                   height: 30,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            doc['productName'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          Text(
-                            doc['sizeOrVarient'],
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                convertPrice,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 5,
-                              ),
-                              const Icon(
-                                Icons.close,
-                                size: 13,
-                              ),
-                              const SizedBox(
-                                width: 5,
-                              ),
-                              Text(
-                                doc['quantity'].toString(),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                      ),
-                      Spacer(),
-                      Image.network(
-                        doc['photoUrl'],
-                        width: MediaQuery.of(context).siPERM
-ze.width * 0.3,
-                        height: MediaQuery.of(context).size.width * 0.35,
-                      ),
-                    ],
-                  ),
+                buildProductDetails(
+                  orderMap,
+                  productPrice,
+                  context,
                 ),
                 Divider(
                   color: Colors.grey.withOpacity(0.2),
                   thickness: 4,
-                  height: 30,
+                  height: 20,
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 25,
                 ),
-                buildDeliveryStatusBar(context),
-
+                buildDeliveryStatusBar(
+                  context,
+                  isOrdered: isOrdered,
+                  isShipped: isShipped,
+                  isDelivered: isDelivered,
+                  orderDate: formatedOrderDate,
+                ),
                 Divider(
                   color: Colors.grey.withOpacity(0.2),
                   thickness: 4,
@@ -222,7 +175,88 @@ ze.width * 0.3,
                 )
               ],
             );
-          }),
+          },
+        ));
+  }
+
+// =============================================================================================
+// This method show the full productDetails
+
+  Padding buildProductDetails(doc, String productPrice, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 20,
+        right: 20,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                doc['productName'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              Text(
+                doc['sizeOrVarient'],
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              Row(
+                children: [
+                  Text(
+                    '₹$productPrice',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 5,
+                  ),
+                  const Icon(
+                    Icons.close,
+                    size: 13,
+                  ),
+                  const SizedBox(
+                    width: 5,
+                  ),
+                  Text(
+                    quantity.toString(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+                ],
+              ),
+            ],
+          ),
+          Spacer(),
+          Image.network(
+            doc['imageUrl'],
+            width: MediaQuery.of(context).size.width * 0.3,
+            height: MediaQuery.of(context).size.width * 0.35,
+          ),
+        ],
+      ),
     );
   }
 
@@ -241,7 +275,7 @@ ze.width * 0.3,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            doc['shippingAddress']['name'],
+            address['name'],
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -251,22 +285,21 @@ ze.width * 0.3,
             height: 10,
           ),
           Text(
-            doc['shippingAddress']['city'],
+            address['city'],
             style: addressStyle,
           ),
-          SizedBox(
+          const SizedBox(
             height: 3,
           ),
           Text(
-            // 'Kerala  -  676551',
-            "${doc['shippingAddress']['state']} -  ${doc['shippingAddress']['pincode']}",
+            "${address['state']} -  ${address['pincode']}",
             style: addressStyle,
           ),
-          SizedBox(
+          const SizedBox(
             height: 7,
           ),
           Text(
-            doc['shippingAddress']['name'],
+            address['phoneNumber'],
             style: addressStyle,
           ),
         ],
@@ -277,93 +310,62 @@ ze.width * 0.3,
 // =========================================================================================
 // This method is used to show the delivery status bar.
 
-  Column buildDeliveryStatusBar(BuildContext context) {
+  Column buildDeliveryStatusBar(
+    BuildContext context, {
+    required bool isOrdered,
+    required bool isShipped,
+    required bool isDelivered,
+    required String orderDate,
+  }) {
     final mediaQuery = MediaQuery.of(context).size;
 
     return Column(
       children: [
-        TimelineTile(
+        TimeLIneWidget(
+          mediaQuery: mediaQuery,
           isFirst: true,
-          alignment: TimelineAlign.manual,
-          lineXY: 0.08,
-          endChild: Padding(
-            padding: EdgeInsets.only(
-              bottom: mediaQuery.width * 0.07,
-              left: mediaQuery.width * 0.04,
-            ),
-            child: BuildStatusContent(
-              image: 'assets/images/Checklist-Logo.png',
-              text: 'Ordered',
-              subText: 'Ordered on Mar 20 2022',
-              bottom: 8,
-              sizedBoxWidth: 5,
-            ),
-          ),
-          afterLineStyle:
-              LineStyle(color: themeColor.withOpacity(0.6), thickness: 3),
-          indicatorStyle: IndicatorStyle(
-            color: themeColor,
-            indicatorXY: 0.3,
-            padding: EdgeInsets.only(
-              top: 5,
-            ),
+          indicatiorColor: themeColor,
+          afterlineColor: themeColor.withOpacity(0.6),
+          beforlineColor: Colors.black12,
+          buildStatusContent: BuildStatusContent(
+            lottie: 'https://assets8.lottiefiles.com/packages/lf20_6LimOm.json',
+            text: 'Ordered',
+            subText: 'Ordered on $orderDate',
+            bottom: 8,
+            sizedBoxWidth: 5,
           ),
         ),
-        TimelineTile(
-          alignment: TimelineAlign.manual,
-          lineXY: 0.08,
-          endChild: BuildStatusContent(
-            image: 'assets/images/f8a162a8cf5ae11b9b2f92d624d9c527.png',
+        TimeLIneWidget(
+          mediaQuery: mediaQuery,
+          indicatiorColor: isShipped ? themeColor : Colors.white,
+          afterlineColor:
+              isShipped ? themeColor.withOpacity(0.6) : Colors.black12,
+          beforlineColor:
+              isShipped ? themeColor.withOpacity(0.6) : Colors.black12,
+          buildStatusContent: const BuildStatusContent(
+            lottie:
+                'https://assets5.lottiefiles.com/packages/lf20_1n2cvwnt.json',
             text: 'Shipped',
-            subText: 'Shipped on Mar 20 2022',
-          ),
-          beforeLineStyle: LineStyle(color: Colors.black12, thickness: 3),
-          afterLineStyle: LineStyle(color: Colors.black12, thickness: 3),
-          indicatorStyle: IndicatorStyle(
-            color: Colors.black12,
-            height: 20,
-            width: 20,
-            indicator: Container(
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.black12,
-                    width: 2,
-                  )),
-            ),
-            indicatorXY: 0.3,
-            padding: EdgeInsets.only(
-              top: 1,
-              bottom: 1,
-            ),
+            subText: 'Ordered on Mar 20 2022',
+            bottom: 8,
+            sizedBoxWidth: 5,
           ),
         ),
-        TimelineTile(
+        TimeLIneWidget(
+          mediaQuery: mediaQuery,
           isLast: true,
-          endChild: BuildStatusContent(
-            image: 'assets/images/pickup-your-delivery-2839465-2371175.webp',
-            text: 'Delivered',
-            subText: 'Delivered on Mar 20 2022',
-          ),
-          alignment: TimelineAlign.manual,
-          lineXY: 0.08,
-          beforeLineStyle: LineStyle(color: Colors.black12, thickness: 3),
-          indicatorStyle: IndicatorStyle(
-            color: Colors.black12,
-            height: 20,
-            width: 20,
-            indicator: Container(
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.black12,
-                    width: 2,
-                  )),
-            ),
-            indicatorXY: 0.3,
-            padding: EdgeInsets.only(top: 1),
+          indicatiorColor: isDelivered ? themeColor : Colors.white,
+          afterlineColor:
+              isDelivered ? themeColor.withOpacity(0.6) : Colors.black12,
+          beforlineColor:
+              isDelivered ? themeColor.withOpacity(0.6) : Colors.black12,
+          buildStatusContent: BuildStatusContent(
+            lottie:
+                'https://assets8.lottiefiles.com/private_files/lf30_cyp2olco.json',
+            text: 'Ordered',
+            subText: 'Ordered on Mar 20 2022',
+            bottom: 8,
+            sizedBoxWidth: 5,
           ),
         ),
       ],
@@ -381,8 +383,8 @@ ze.width * 0.3,
 
     var formatter = NumberFormat('#,##,000');
 
-    String convertPriceTotalSum = formatter.format(doc['totalPrice'] + 150);
-    String convertPrice = formatter.format(doc['price']);
+    String convertPrice = formatter.format(totalPrice / quantity);
+    String convertPriceTotalSum = formatter.format(totalPrice);
 
     return Padding(
       padding: EdgeInsets.only(top: 10, right: 20, left: 20),
@@ -392,14 +394,14 @@ ze.width * 0.3,
           Row(
             children: [
               Text(
-                'Price( ${doc['quantity']} items)',
+                'Payment Method',
                 style: TextStyle(
                   fontSize: 16,
                 ),
               ),
               const Spacer(),
               Text(
-                convertPrice,
+                doc['paymentMethod'],
                 style: TextStyle(
                   fontSize: 16,
                 ),
@@ -411,36 +413,57 @@ ze.width * 0.3,
           ),
           Row(
             children: [
-              Text(
-                'Delivery charge',
+              const Text(
+                'Product Price',
                 style: TextStyle(
                   fontSize: 16,
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Text(
-                '150',
-                style: TextStyle(
+                convertPrice,
+                style: const TextStyle(
                   fontSize: 16,
                 ),
               ),
             ],
           ),
-          Divider(
+          const SizedBox(
+            height: 15,
+          ),
+          Row(
+            children: [
+              const Text(
+                'Product Quantity',
+                style: TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$quantity',
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const Divider(
             thickness: 2,
             height: 35,
           ),
           Row(
             children: [
-              Text(
+              const Text(
                 'Total Amount',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
-              Spacer(),
+              const Spacer(),
               Text(
-                convertPriceTotalSum,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
+                '₹$convertPriceTotalSum',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
             ],
           ),
         ],
@@ -448,3 +471,97 @@ ze.width * 0.3,
     );
   }
 }
+
+class TimeLIneWidget extends StatelessWidget {
+  const TimeLIneWidget({
+    Key? key,
+    required this.mediaQuery,
+    required this.indicatiorColor,
+    required this.afterlineColor,
+    required this.beforlineColor,
+    required this.buildStatusContent,
+    this.isFirst = false,
+    this.isLast = false,
+  }) : super(key: key);
+
+  final Size mediaQuery;
+  final Color indicatiorColor;
+  final Color afterlineColor;
+  final Color beforlineColor;
+  final bool isFirst;
+  final bool isLast;
+  final BuildStatusContent buildStatusContent;
+
+  @override
+  Widget build(BuildContext context) {
+    return TimelineTile(
+      isFirst: isFirst,
+      isLast: isLast,
+      alignment: TimelineAlign.manual,
+      lineXY: 0.08,
+      endChild: Padding(
+        padding: EdgeInsets.only(
+          bottom: mediaQuery.width * 0.07,
+          left: mediaQuery.width * 0.02,
+        ),
+        child: buildStatusContent,
+      ),
+      afterLineStyle: LineStyle(
+        color: afterlineColor,
+        thickness: 2.5,
+      ),
+      beforeLineStyle: LineStyle(
+        color: beforlineColor,
+        thickness: 2.5,
+      ),
+      indicatorStyle: IndicatorStyle(
+        color: indicatiorColor,
+        indicatorXY: 0.3,
+        indicator: Container(
+          decoration: BoxDecoration(
+              color: indicatiorColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.black12,
+                width: 1.5,
+              )),
+        ),
+        padding: EdgeInsets.symmetric(
+          vertical: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+
+ // TimelineTile(
+        //   alignment: TimelineAlign.manual,
+        //   lineXY: 0.08,
+        //   endChild: BuildStatusContent(
+        //     image: 'assets/images/f8a162a8cf5ae11b9b2f92d624d9c527.png',
+        //     text: 'Shipped',
+        //     subText: 'Shipped on Mar 20 2022',
+        //   ),
+        //   beforeLineStyle: LineStyle(color: Colors.black12, thickness: 3),
+        //   afterLineStyle: LineStyle(color: Colors.black12, thickness: 3),
+        //   indicatorStyle: IndicatorStyle(
+        //     color: Colors.black12,
+        //     height: 20,
+        //     width: 20,
+        //     indicator: Container(
+        //       decoration: BoxDecoration(
+        //           color: Colors.white,
+        //           shape: BoxShape.circle,
+        //           border: Border.all(
+        //             color: Colors.black12,
+        //             width: 2,
+        //           )),
+        //     ),
+        //     indicatorXY: 0.3,
+        //     padding: EdgeInsets.only(
+        //       top: 0.5,
+        //       bottom: 0.5,
+        //     ),
+        //   ),
+        // ),

@@ -37,43 +37,44 @@ class HomeScreen extends StatelessWidget {
     return Container(
       color: Colors.grey.shade100,
       child: SafeArea(
-        child: Scaffold(
-          body: NestedScrollView(
-            floatHeaderSlivers: true,
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              buildSliverAppbar(context),
+        // child: Scaffold(
+        // body:
+        child: NestedScrollView(
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            buildSliverAppbar(context),
+          ],
+          body: ListView(
+            physics: const BouncingScrollPhysics(),
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: mediaQuery.width * 0.04,
+                  vertical: mediaQuery.width * 0.025,
+                ),
+                child: const Text(
+                  'Select Category',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              buildCategories(
+                context,
+              ),
+              // buildBanner(
+              //   context,
+              //   homecontroller,
+              // ),
+              buildProducts(
+                context,
+                homecontroller,
+              ),
             ],
-            body: ListView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: mediaQuery.width * 0.04,
-                    vertical: mediaQuery.width * 0.025,
-                  ),
-                  child: const Text(
-                    'Select Category',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                buildCategories(
-                  context,
-                ),
-                buildBanner(
-                  context,
-                  homecontroller,
-                ),
-                buildProducts(
-                  context,
-                  homecontroller,
-                ),
-              ],
-            ),
           ),
         ),
+        // ),
       ),
     );
   }
@@ -196,12 +197,16 @@ class HomeScreen extends StatelessWidget {
                                 left: mediaQuery.width * 0.315,
                                 child: StreamBuilder(
                                     stream: FirebaseFirestore.instance
-                                        .collection('Users')
-                                        .doc(FirebaseAuth
-                                            .instance.currentUser!.uid)
-                                        .collection('Favorites')
-                                        .where('productName',
-                                            isEqualTo: doc['productName'])
+                                        .collection('Wishlist')
+                                        .where(
+                                          'userId',
+                                          isEqualTo: FirebaseAuth
+                                              .instance.currentUser!.uid,
+                                        )
+                                        .where(
+                                          'productId',
+                                          isEqualTo: doc.id,
+                                        )
                                         .snapshots(),
                                     builder: (context,
                                         AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -213,15 +218,12 @@ class HomeScreen extends StatelessWidget {
                                         onTap: (isLiked) {
                                           if (snapshot.data!.docs.length == 0) {
                                             Favorites favorites = Favorites(
-                                              productName: doc['productName'],
-                                              price: doc['price'],
-                                              imageUrl: doc['imageUrls'][0],
+                                              productId: doc.id,
                                             );
                                             Favorites.addToFavorite(
                                               favorites,
                                               context,
                                               doc['productName'],
-                                              doc.id,
                                             );
                                             return Future.value(true);
                                           }
@@ -440,7 +442,6 @@ class HomeScreen extends StatelessWidget {
       actions: [
         GestureDetector(
           onTap: () {
-            print('tapped');
             Get.to(
               CartScreen(),
               transition: Transition.fade,
@@ -448,14 +449,18 @@ class HomeScreen extends StatelessWidget {
           },
           child: StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .collection('Cart')
+                  .collection('Carts')
+                  .where(
+                    'userId',
+                    isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                  )
                   .snapshots(),
               builder: (BuildContext context,
                   AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Icon(CupertinoIcons.cart_fill);
+                  return const Icon(
+                    CupertinoIcons.cart_fill,
+                  );
                 }
 
                 return Badge(

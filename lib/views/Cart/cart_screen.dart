@@ -4,6 +4,7 @@ import 'package:e_commerce_app/core/colors.dart';
 import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/views/checkout%20address/checkout_address.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,7 +12,11 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  CartScreen({Key? key}) : super(key: key);
+
+  List<String> productNames = [];
+  List<String> sizeOrVarient = [];
+  List<String> imageUrl = [];
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +29,7 @@ class CartScreen extends StatelessWidget {
           onPressed: () {
             Get.back();
           },
-          icon: Icon(
+          icon: const Icon(
             CupertinoIcons.back,
             color: Colors.black,
           ),
@@ -38,49 +43,108 @@ class CartScreen extends StatelessWidget {
         ),
       ),
       body: StreamBuilder(
-          stream: FirebaseFirestore.instance
-              .collection('Users')
-              .doc(userId)
-              .collection('Cart')
-              .snapshots(),
-          builder: (
-            context,
-            AsyncSnapshot<QuerySnapshot> snapshot,
-          ) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-
-            if (snapshot.data!.docs.isEmpty) {
-              return Center(
-                child: Lottie.network(
-                    'https://assets4.lottiefiles.com/datafiles/vhvOcuUkH41HdrL/data.json'),
-              );
-            }
-
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    physics: BouncingScrollPhysics(),
-                    children: [
-                      buildProductviews(snapshot),
-                      Divider(
-                        thickness: 5,
-                      ),
-                      buildPriceDescription(context, snapshot)
-                    ],
-                  ),
-                ),
-                buildCheckOutButton(context),
-                SizedBox(
-                  height: 15,
-                ),
-              ],
+        stream: FirebaseFirestore.instance
+            .collection('Carts')
+            .where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+            .snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
             );
-          }),
+          }
+
+          // if (snapshot.connectionState ==ConnectionState.) {
+          //   return Center(child: Text('l'),);
+          // }
+
+          if (snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Lottie.network(
+                'https://assets4.lottiefiles.com/datafiles/vhvOcuUkH41HdrL/data.json',
+              ),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    buildProductviews(snapshot),
+                    const Divider(
+                      thickness: 5,
+                    ),
+                    buildPriceDescription(
+                      context,
+                      snapshot,
+                    )
+                  ],
+                ),
+              ),
+              buildCheckOutButton(
+                context,
+              ),
+              const SizedBox(
+                height: 15,
+              ),
+            ],
+          );
+        },
+        // body: StreamBuilder(
+        //   stream: FirebaseFirestore.instance
+        //       .collection('Users')
+        //       .doc(userId)
+        //       .collection('Cart')
+        //       .snapshots(),
+        //   builder: (
+        //     context,
+        //     AsyncSnapshot<QuerySnapshot> snapshot,
+        //   ) {
+        //     if (snapshot.connectionState == ConnectionState.waiting) {
+        //       return const Center(
+        //         child: CircularProgressIndicator(),
+        //       );
+        //     }
+
+        //     if (snapshot.data!.docs.isEmpty) {
+        //       return Center(
+        //         child: Lottie.network(
+        //           'https://assets4.lottiefiles.com/datafiles/vhvOcuUkH41HdrL/data.json',
+        //         ),
+        //       );
+        //     }
+
+        //     return Column(
+        //       children: [
+        //         Expanded(
+        //           child: ListView(
+        //             physics: const BouncingScrollPhysics(),
+        //             children: [
+        //               buildProductviews(snapshot),
+        //               const Divider(
+        //                 thickness: 5,
+        //               ),
+        //               buildPriceDescription(
+        //                 context,
+        //                 snapshot,
+        //               )
+        //             ],
+        //           ),
+        //         ),
+        //         buildCheckOutButton(
+        //           context,
+        //           snapshot,
+        //         ),
+        //         const SizedBox(
+        //           height: 15,
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // ),
+      ),
     );
   }
 
@@ -126,24 +190,24 @@ class CartScreen extends StatelessWidget {
             children: [
               Text(
                 'Price( ${snapshot.data!.docs.length} items)',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Text(
                 '₹$convertedSum',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                 ),
               ),
             ],
           ),
-          SizedBox(
+          const SizedBox(
             height: 15,
           ),
           Row(
-            children: [
+            children: const [
               Text(
                 'Delivery charge',
                 style: TextStyle(
@@ -171,8 +235,9 @@ class CartScreen extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '₹$convertTotalSum',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                '₹$convertedSum',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -189,85 +254,133 @@ class CartScreen extends StatelessWidget {
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
-        final data = snapshot.data!.docs[index];
+        final cartData = snapshot.data!.docs[index];
 
         var formatter = NumberFormat('#,##,000');
 
-        String convertPriceTotalSum = formatter.format(data['totalPrice']);
+        String convertPriceTotalSum = formatter.format(cartData['totalPrice']);
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: ListTile(
-            leading: Image.network(
-              data['imageUrl'],
-              width: 70,
-              height: 70,
-            ),
-            title: Text(
-              data['productName'],
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              '₹$convertPriceTotalSum , ${data['sizeOrVarient']}',
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    if (data['quantity'] == 1) {
-                      Cart.deleteFromCart(
-                          data.id, context, data['productName']);
-                    } else {
-                      Cart.decreaseQuantity(
-                          data.id, data['quantity'] - 1, data['price'],
-                          totalPrice: data['totalPrice']);
-                    }
-                  },
-                  icon: const Icon(
-                    CupertinoIcons.minus,
-                    size: 20,
+        return StreamBuilder(
+            stream: FirebaseFirestore.instance
+                .collection("Products")
+                .doc(cartData['productId'])
+                .snapshots(),
+            builder: (context, AsyncSnapshot psnapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              if (psnapshot.data == null) {
+                return Text('');
+              }
+
+              final productData = psnapshot.data;
+
+              String s = productData['price'];
+
+              String result = s.split(",").last;
+              String result1 = s.split(",").first;
+
+              String addedPrice = result1 + result;
+
+              int price = int.parse(addedPrice);
+
+              productNames.add(productData['productName']);
+              sizeOrVarient.add(productData['sizeOrVarient']);
+              imageUrl.add(productData['imageUrls'][0]);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: ListTile(
+                  leading: Image.network(
+                    productData['imageUrls'][0],
+                    // 'https://i.guim.co.uk/img/media/c699b4c005a687be3bae6784b8731686d5b111c1/116_314_4331_2598/master/4331.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=a470f4b8de2e35550d64a6d5df2c379a',
+                    width: 70,
+                    height: 70,
+                  ),
+                  title: Text(
+                    productData['productName'],
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '₹$convertPriceTotalSum , ${productData['sizeOrVarient']}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          if (cartData['quantity'] == 1) {
+                            Cart.deleteFromCart(
+                              docId: cartData.id,
+                              context: context,
+                              productName: productData['productName'],
+                            );
+                          } else {
+                            Cart.decreaseQuantity(
+                              cartData.id,
+                              cartData['quantity'] - 1,
+                              price,
+                              totalPrice: cartData['totalPrice'],
+                            );
+                          }
+                        },
+                        icon: const Icon(
+                          CupertinoIcons.minus,
+                          size: 20,
+                        ),
+                      ),
+                      Text(
+                        cartData['quantity'].toString(),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Colors.black,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          if (cartData['quantity'] == 5) {
+                            CoolAlert.show(
+                              context: context,
+                              type: CoolAlertType.warning,
+                              animType: CoolAlertAnimType.slideInLeft,
+                              text: "You can't purchase 5 more quantities!",
+                            );
+                          } else {
+                            Cart.increaseQuantity(
+                              cartData.id,
+                              cartData['quantity'] + 1,
+                              price,
+                            );
+                          }
+                        },
+                        icon: const Icon(
+                          CupertinoIcons.add,
+                          size: 20,
+                        ),
+                      )
+                    ],
                   ),
                 ),
-                Text(
-                  data['quantity'].toString(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.black,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    if (data['quantity'] == 5) {
-                      CoolAlert.show(
-                        context: context,
-                        type: CoolAlertType.warning,
-                        animType: CoolAlertAnimType.slideInLeft,
-                        text: "You can't purchase 5 more quantities!",
-                      );
-                    } else {
-                      Cart.increaseQuantity(
-                        data.id,
-                        data['quantity'] + 1,
-                        data['price'],
-                      );
-                    }
-                  },
-                  icon: const Icon(
-                    CupertinoIcons.add,
-                    size: 20,
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
+              );
+            });
       },
-      separatorBuilder: (context, index) => const Divider(
-        color: Colors.black12,
-        height: 10,
-      ),
+      separatorBuilder: (context, index) {
+        return snapshot.data!.docs.isEmpty
+            ? SizedBox()
+            : Divider(
+                color: Colors.black12,
+                height: 10,
+              );
+      },
       itemCount: snapshot.data!.docs.length,
     );
   }
@@ -275,19 +388,28 @@ class CartScreen extends StatelessWidget {
 // =========================================================================================
 // This method is used to show the sign in button.
 
-  ElevatedButton buildCheckOutButton(BuildContext context) {
+  ElevatedButton buildCheckOutButton(
+    BuildContext context,
+  ) {
     final mediaQuery = MediaQuery.of(context).size;
+
     return ElevatedButton(
       style: ButtonStyle(
         backgroundColor: MaterialStateProperty.all(themeColor),
       ),
       onPressed: () {
-        print('checkout');
+        CartProductDetails cartProductDetails = CartProductDetails(
+          productName: productNames,
+          sizeOrVarinet: sizeOrVarient,
+          imageUrl: imageUrl,
+        );
+
         Get.to(
-          CheckOutAddress(),
+          CheckOutAddress(
+            cartProductDetails: cartProductDetails,
+          ),
           transition: Transition.leftToRight,
         );
-        // Get.to(BottomNavBar(), transition: Transition.downToUp);
       },
       child: Padding(
         padding: EdgeInsets.symmetric(

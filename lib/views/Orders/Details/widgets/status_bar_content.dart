@@ -1,17 +1,17 @@
-
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 class BuildStatusContent extends StatelessWidget {
   const BuildStatusContent({
     Key? key,
-    required this.image,
+    required this.lottie,
     required this.text,
     required this.subText,
     this.bottom = 35,
     this.sizedBoxWidth = 20.0,
   }) : super(key: key);
 
-  final String image;
+  final String lottie;
   final String text;
   final String subText;
   final double bottom;
@@ -27,8 +27,10 @@ class BuildStatusContent extends StatelessWidget {
           SizedBox(
             width: sizedBoxWidth,
           ),
-          Image.asset(
-            image,
+          Lottie.network(
+            lottie,
+            repeat: false,
+            animate: true,
             height: 40,
             width: 40,
           ),

@@ -123,35 +123,31 @@ class AccountScreen extends StatelessWidget {
                   .snapshots(),
               builder: (BuildContext context, AsyncSnapshot snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Shimmer.fromColors(
-                    baseColor: Colors.red,
-                    highlightColor: Colors.green,
-                    child: const Text('Loading'),
-                  );
+                  return const Text('Loading');
                 }
 
                 final data = snapshot.data;
 
-                if (snapshot.connectionState == ConnectionState.active) {
-                  print('success');
-                  return Text(
-                    userName == '' ? data['userName'] : userName,
-                    style: const TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black,
-                    ),
-                  );
-                }
-
+                // if (snapshot.connectionState == ConnectionState.active) {
+                // print(FirebaseAuth.instance.currentUser!);
                 return Text(
-                  'dllkf',
+                  data['userName'],
                   style: const TextStyle(
                     fontSize: 25,
                     fontWeight: FontWeight.w400,
                     color: Colors.black,
                   ),
                 );
+                // }
+
+                // return Text(
+                //   'dllkf',
+                //   style: const TextStyle(
+                //     fontSize: 25,
+                //     fontWeight: FontWeight.w400,
+                //     color: Colors.black,
+                //   ),
+                // );
               },
             ),
             SizedBox(

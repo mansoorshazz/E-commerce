@@ -5,21 +5,16 @@ import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 class Favorites {
-  final String productName;
-  final String price;
-  final String imageUrl;
+  final String productId;
 
   Favorites({
-    required this.productName,
-    required this.price,
-    required this.imageUrl,
+    required this.productId,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'productName': productName,
-      'price': price,
-      'imageUrl': imageUrl,
+      'userId': FirebaseAuth.instance.currentUser!.uid,
+      'productId': productId,
     };
   }
 
@@ -27,14 +22,8 @@ class Favorites {
     Favorites favorites,
     BuildContext context,
     String productName,
-    String productId,
   ) {
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('Favorites')
-        .doc(productId)
-        .set(favorites.toMap());
+    FirebaseFirestore.instance.collection('Wishlist').add(favorites.toMap());
 
     Get.showSnackbar(
       GetSnackBar(
@@ -48,12 +37,7 @@ class Favorites {
 
   static deleteToFavorite(
       BuildContext context, String productName, String docId) async {
-    await FirebaseFirestore.instance
-        .collection('Users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('Favorites')
-        .doc(docId)
-        .delete();
+    await FirebaseFirestore.instance.collection('Wishlist').doc(docId).delete();
 
     Get.showSnackbar(
       GetSnackBar(

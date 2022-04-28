@@ -20,6 +20,7 @@ class AccountDetailsScreen extends StatelessWidget {
   final provider = FirebaseAuth.instance.currentUser!.providerData;
 
   final displayName = FirebaseAuth.instance.currentUser!.displayName;
+  final imageUrl = FirebaseAuth.instance.currentUser!.photoURL;
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context).size;
@@ -55,6 +56,7 @@ class AccountDetailsScreen extends StatelessWidget {
                 ),
               );
             }
+            print(provider[0].providerId.runtimeType);
 
             if (snapshot.connectionState == ConnectionState.active) {
               final data = snapshot.data;
@@ -70,7 +72,9 @@ class AccountDetailsScreen extends StatelessWidget {
                         ),
                         BuildProfileImage(
                           mediaQuery: mediaQuery,
-                          imageUrl: data['imageUrl'],
+                          imageUrl: provider[0].providerId == 'google.com'
+                              ? imageUrl
+                              : data['imageUrl'],
                         ),
                         SizedBox(
                           height: mediaQuery.height * 0.045,

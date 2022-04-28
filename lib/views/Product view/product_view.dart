@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/core/colors.dart';
 import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/model/Firebase/favorite.dart';
+import 'package:e_commerce_app/views/checkout%20address/checkout_address.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,19 +18,6 @@ class ProductViewScreen extends StatelessWidget {
     // required this.index,
     required this.document,
   }) : super(key: key);
-
-  final List<String> imgList = [
-    'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iphone-12-purple-select-2021?wid=470&hei=556&fmt=jpeg&qlt=95&.v=1617130317000',
-    'https://img.poorvika.com/1600_JPG/Mobiles/Apple/Apple-IPhone-12-New/Apple-iPhone-12-Purple-3.jpg',
-    'https://res.cloudinary.com/octopuscdn/image/upload/f_auto/istudio/images/products/styles/style_584/large_1619076595_Apple_iPhone_12-Purple-3.jpg',
-    'https://res.cloudinary.com/octopuscdn/image/upload/f_auto/istudio/images/products/styles/style_584/large_1619076595_Apple_iPhone_12-Purple-9.jpg',
-  ];
-
-  final List texts = [
-    '4/128 GB',
-    '6/128 GB',
-    '8/256 GB',
-  ];
 
   // final int index;
   final String document;
@@ -47,7 +35,7 @@ class ProductViewScreen extends StatelessWidget {
         final data = snapshot.data;
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
+          return const Center(
             child: CircularProgressIndicator(),
           );
         }
@@ -57,12 +45,7 @@ class ProductViewScreen extends StatelessWidget {
         String result1 = s.split(",").first;
 
         String addedPrice = result1 + result;
-
         int price = int.parse(addedPrice);
-
-        print(price);
-
-        print(data['productName']);
 
         return Scaffold(
           appBar: AppBar(
@@ -87,10 +70,11 @@ class ProductViewScreen extends StatelessWidget {
             actions: [
               StreamBuilder(
                   stream: FirebaseFirestore.instance
-                      .collection('Users')
-                      .doc(FirebaseAuth.instance.currentUser!.uid)
-                      .collection('Favorites')
-                      .where('productName', isEqualTo: data['productName'])
+                      .collection('Wishlist')
+                      .where(
+                        'productId',
+                        isEqualTo: document,
+                      )
                       .snapshots(),
                   builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.data == null) {
@@ -101,15 +85,12 @@ class ProductViewScreen extends StatelessWidget {
                       onTap: (isLiked) {
                         if (snapshot.data!.docs.length == 0) {
                           Favorites favorites = Favorites(
-                            productName: data['productName'],
-                            price: data['price'],
-                            imageUrl: data['imageUrls'][0],
+                            productId: document,
                           );
                           Favorites.addToFavorite(
                             favorites,
                             context,
                             data['productName'],
-                            data.id,
                           );
                           return Future.value(true);
                         }
@@ -210,18 +191,18 @@ class ProductViewScreen extends StatelessWidget {
                           SizedBox(
                             height: mediaQuery.height * 0.02,
                           ),
-                          const Text(
-                            'Select',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          // const Text(
+                          //   'Select',
+                          //   style: TextStyle(
+                          //     color: Colors.black,
+                          //     fontSize: 18,
+                          //     fontWeight: FontWeight.w600,
+                          //   ),
+                          // ),
                           SizedBox(
                             height: mediaQuery.height * 0.01,
                           ),
-                          buildButtonVarients(),
+                          // buildButtonVarients(),
                           const SizedBox(
                             height: 30,
                           ),
@@ -269,7 +250,7 @@ class ProductViewScreen extends StatelessWidget {
                 color: Colors.black12,
               ),
             ),
-            child: Center(child: Text(texts[index])),
+            child: Center(child: Text('')),
           );
         },
         separatorBuilder: (context, index) => SizedBox(
@@ -280,8 +261,8 @@ class ProductViewScreen extends StatelessWidget {
     );
   }
 
-// =========================================================================
-// This method is used to show the cart and buy button.
+// ==============================================================================
+// adding product to cart method 2.
 
   Row buildButtons(
     Size mediaQuery,
@@ -298,10 +279,13 @@ class ProductViewScreen extends StatelessWidget {
         Spacer(),
         StreamBuilder(
             stream: FirebaseFirestore.instance
-                .collection('Users')
-                .doc(FirebaseAuth.instance.currentUser!.uid)
-                .collection('Cart')
-                .where('productName', isEqualTo: productName)
+                .collection('Carts')
+                .where('userId',
+                    isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                .where(
+                  'productName',
+                  isEqualTo: productName,
+                )
                 .snapshots(),
             builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -334,14 +318,16 @@ class ProductViewScreen extends StatelessWidget {
                 onPressed: () {
                   if (dataLength == 0) {
                     Cart cart = Cart(
-                      imageUrl: imageUrl,
-                      productName: productName,
-                      price: price,
-                      sizeOrVarient: sizeOrVarient,
                       totalPrice: price,
+                      productId: docId,
                       quantity: 1,
                     );
-                    Cart.addToCart(cart, productName, context, docId);
+                    Cart.addToCart(
+                      cart: cart,
+                      productName: productName,
+                      context: context,
+                      docId: docId,
+                    );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -375,29 +361,173 @@ class ProductViewScreen extends StatelessWidget {
                 ),
               );
             }),
-        Spacer(),
-        Container(
-          height: mediaQuery.height * 0.06,
-          width: mediaQuery.width * 0.45,
-          decoration: BoxDecoration(
-            color: themeColor,
-            borderRadius: BorderRadius.circular(5),
+        const Spacer(),
+        Bounce(
+          duration: const Duration(
+            milliseconds: 150,
           ),
-          child: Center(
-            child: Text(
-              'Buy Now',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+          onPressed: () {
+            List<String> productNames = [];
+            List<String> imageUrls = [];
+            List<String> sizeOrVarients = [];
+
+            productNames.add(productName);
+            imageUrls.add(imageUrl);
+            sizeOrVarients.add(sizeOrVarient);
+            CartProductDetails cartProductDetails = CartProductDetails(
+                productName: productNames,
+                sizeOrVarinet: sizeOrVarients,
+                imageUrl: imageUrls);
+
+            Get.to(CheckOutAddress(
+              productId: docId,
+              cartProductDetails: cartProductDetails,
+              price: price,
+              quantity: 1,
+            ));
+          },
+          child: Container(
+            height: mediaQuery.height * 0.06,
+            width: mediaQuery.width * 0.45,
+            decoration: BoxDecoration(
+              color: themeColor,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: const Center(
+              child: Text(
+                'Buy Now',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
         ),
-        Spacer(),
+        const Spacer(),
       ],
     );
   }
+
+// // =========================================================================
+// // This method is used to show the cart and buy button.
+
+//   Row buildButtons(
+//     Size mediaQuery,
+//     BuildContext context, {
+//     required String imageUrl,
+//     required String productName,
+//     required int price,
+//     required String sizeOrVarient,
+//     required String docId,
+//   }) {
+//     return Row(
+//       // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//       children: [
+//         Spacer(),
+//         StreamBuilder(
+//             stream: FirebaseFirestore.instance
+//                 .collection('Users')
+//                 .doc(FirebaseAuth.instance.currentUser!.uid)
+//                 .collection('Cart')
+//                 .where('productName', isEqualTo: productName)
+//                 .snapshots(),
+//             builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+//               if (snapshot.connectionState == ConnectionState.waiting) {
+//                 return Container(
+//                   height: mediaQuery.height * 0.06,
+//                   width: mediaQuery.width * 0.45,
+//                   decoration: BoxDecoration(
+//                     border: Border.all(
+//                       width: 2,
+//                       color: themeColor,
+//                     ),
+//                     borderRadius: BorderRadius.circular(5),
+//                   ),
+//                   child: Center(
+//                     child: Text(
+//                       'Add to cart',
+//                       style: TextStyle(
+//                         fontSize: 18,
+//                         color: themeColor,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+//                   ),
+//                 );
+//               }
+
+//               final dataLength = snapshot.data!.docs.length;
+
+//               return Bounce(
+//                 onPressed: () {
+//                   if (dataLength == 0) {
+//                     Cart cart = Cart(
+//                       imageUrl: imageUrl,
+//                       productName: productName,
+//                       price: price,
+//                       sizeOrVarient: sizeOrVarient,
+//                       totalPrice: price,
+//                       quantity: 1,
+//                     );
+//                     Cart.addToCart(cart, productName, context, docId);
+//                   } else {
+//                     ScaffoldMessenger.of(context).showSnackBar(
+//                       SnackBar(
+//                         duration: Duration(seconds: 1),
+//                         content: Text('$productName already in cart'),
+//                       ),
+//                     );
+//                   }
+//                 },
+//                 duration: Duration(milliseconds: 150),
+//                 child: Container(
+//                   height: mediaQuery.height * 0.06,
+//                   width: mediaQuery.width * 0.45,
+//                   decoration: BoxDecoration(
+//                     border: Border.all(
+//                       width: 2,
+//                       color: themeColor,
+//                     ),
+//                     borderRadius: BorderRadius.circular(5),
+//                   ),
+//                   child: Center(
+//                     child: Text(
+//                       'Add to cart',
+//                       style: TextStyle(
+//                         fontSize: 18,
+//                         color: themeColor,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               );
+//             }),
+//         Spacer(),
+//         Container(
+//           height: mediaQuery.height * 0.06,
+//           width: mediaQuery.width * 0.45,
+//           decoration: BoxDecoration(
+//             color: themeColor,
+//             borderRadius: BorderRadius.circular(5),
+//           ),
+//           child: Center(
+//             child: Text(
+//               'Buy Now',
+//               style: TextStyle(
+//                 fontSize: 18,
+//                 color: Colors.white,
+//                 fontWeight: FontWeight.w500,
+//               ),
+//             ),
+//           ),
+//         ),
+//         Spacer(),
+//       ],
+//     );
+//   }
 
 // ====================================================================================
 // This method is used to show the carousal product images.
