@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/core/colors.dart';
+import 'package:e_commerce_app/views/Orders/HelpChat/help_chat.dart';
 import 'package:e_commerce_app/widgets/shimmer_lodaing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
@@ -69,27 +73,27 @@ class OrderDetailsScreen extends StatelessWidget {
               .collection('Orders')
               .doc(documentId)
               .snapshots(),
-          builder: (context, AsyncSnapshot snapshot) {
+          builder: (context, AsyncSnapshot<DocumentSnapshot> snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const LoadingShimmer();
             }
 
-            final orderMap = snapshot.data;
+            var orderMap = snapshot.data;
 
-            bool isOrdered = orderMap['orderDetails']['ordered'];
+            // bool isOrdered = orderMap['ordered'];
 
-            bool isShipped = orderMap['shippingDetails']['shipped'];
+            // bool isShipped = orderMap['shipped'];
 
-            bool isDelivered = orderMap['deliveredDetails']['delivered'];
+            // bool isDelivered = orderMap['delivered'];
 
-            final orderdate = DateTime.fromMillisecondsSinceEpoch(
-              orderMap['orderDetails']['date'],
-            );
+            // final orderdate = DateTime.fromMillisecondsSinceEpoch(
+            //   orderMap['orderDetails']['date'],
+            // );
 
-            final formatedOrderDate = DateFormat.yMMMd().format(orderdate);
+            // final formatedOrderDate = DateFormat.yMMMd().format(orderdate);
 
             return ListView(
-              physics: BouncingScrollPhysics(),
+              physics: const BouncingScrollPhysics(),
               children: [
                 Padding(
                   padding: const EdgeInsets.only(
@@ -126,10 +130,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 ),
                 buildDeliveryStatusBar(
                   context,
-                  isOrdered: isOrdered,
-                  isShipped: isShipped,
-                  isDelivered: isDelivered,
-                  orderDate: formatedOrderDate,
+                  orderMap: orderMap,
                 ),
                 Divider(
                   color: Colors.grey.withOpacity(0.2),
@@ -171,8 +172,21 @@ class OrderDetailsScreen extends StatelessWidget {
                 Divider(),
                 buildPriceDescription(context, snapshot),
                 SizedBox(
-                  height: 30,
-                )
+                  height: 10,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: ElevatedButton.icon(
+                    onPressed: () => Get.to(HelpChat(
+                      docId: documentId,
+                    )),
+                    icon: Icon(Icons.message),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      child: Text('Help'),
+                    ),
+                  ),
+                ),
               ],
             );
           },
@@ -249,7 +263,7 @@ class OrderDetailsScreen extends StatelessWidget {
               ),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Image.network(
             doc['imageUrl'],
             width: MediaQuery.of(context).size.width * 0.3,
@@ -267,8 +281,6 @@ class OrderDetailsScreen extends StatelessWidget {
     TextStyle addressStyle,
     AsyncSnapshot snapshot,
   ) {
-    final doc = snapshot.data;
-
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 10),
       child: Column(
@@ -277,11 +289,11 @@ class OrderDetailsScreen extends StatelessWidget {
           Text(
             address['name'],
             style: GoogleFonts.inter(
-              fontSize: 18,
               fontWeight: FontWeight.w500,
+              fontSize: 18,
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 10,
           ),
           Text(
@@ -310,14 +322,37 @@ class OrderDetailsScreen extends StatelessWidget {
 // =========================================================================================
 // This method is used to show the delivery status bar.
 
-  Column buildDeliveryStatusBar(
-    BuildContext context, {
-    required bool isOrdered,
-    required bool isShipped,
-    required bool isDelivered,
-    required String orderDate,
-  }) {
+  Column buildDeliveryStatusBar(BuildContext context,
+      {required dynamic orderMap}) {
     final mediaQuery = MediaQuery.of(context).size;
+
+    //   print(orderMap.runtimeType);
+
+    //  final data = json.encode(orderMap['shippingAddress']);
+
+    //  print(data.runtimeType);
+
+    // bool isOrdered = orderMap['ordered'];
+
+    bool isShipped = orderMap['shipped'];
+
+    bool isDelivered = orderMap['delivered'];
+
+    final orderdate = DateTime.fromMillisecondsSinceEpoch(
+      orderMap['orderedDate'],
+    );
+
+    final shippedDate = DateTime.fromMillisecondsSinceEpoch(
+      orderMap['shippedDate'],
+    );
+
+    final deliveredDate = DateTime.fromMillisecondsSinceEpoch(
+      orderMap['deliveredDate'],
+    );
+
+    final formatedOrderDate = DateFormat.yMMMd().format(orderdate);
+    final formatedshippedDate = DateFormat.yMMMd().format(shippedDate);
+    final formatedDeliveredDate = DateFormat.yMMMd().format(deliveredDate);
 
     return Column(
       children: [
@@ -328,9 +363,10 @@ class OrderDetailsScreen extends StatelessWidget {
           afterlineColor: themeColor.withOpacity(0.6),
           beforlineColor: Colors.black12,
           buildStatusContent: BuildStatusContent(
-            lottie: 'https://assets8.lottiefiles.com/packages/lf20_6LimOm.json',
+            lottie:
+                'https://assets10.lottiefiles.com/packages/lf20_waspcuqo.json',
             text: 'Ordered',
-            subText: 'Ordered on $orderDate',
+            subText: 'Ordered on $formatedOrderDate',
             bottom: 8,
             sizedBoxWidth: 5,
           ),
@@ -342,11 +378,13 @@ class OrderDetailsScreen extends StatelessWidget {
               isShipped ? themeColor.withOpacity(0.6) : Colors.black12,
           beforlineColor:
               isShipped ? themeColor.withOpacity(0.6) : Colors.black12,
-          buildStatusContent: const BuildStatusContent(
+          buildStatusContent: BuildStatusContent(
             lottie:
                 'https://assets5.lottiefiles.com/packages/lf20_1n2cvwnt.json',
             text: 'Shipped',
-            subText: 'Ordered on Mar 20 2022',
+            subText: shippedDate.millisecondsSinceEpoch == 0
+                ? 'Your item has not been shipped'
+                : 'Shipped on $formatedshippedDate',
             bottom: 8,
             sizedBoxWidth: 5,
           ),
@@ -362,8 +400,10 @@ class OrderDetailsScreen extends StatelessWidget {
           buildStatusContent: BuildStatusContent(
             lottie:
                 'https://assets8.lottiefiles.com/private_files/lf30_cyp2olco.json',
-            text: 'Ordered',
-            subText: 'Ordered on Mar 20 2022',
+            text: 'Delivered',
+            subText: deliveredDate.millisecondsSinceEpoch == 0
+                ? 'Your item has been not delivered'
+                : 'Delivered on $formatedDeliveredDate',
             bottom: 8,
             sizedBoxWidth: 5,
           ),
@@ -463,7 +503,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 '₹$convertPriceTotalSum',
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+              ),
             ],
           ),
         ],
@@ -519,49 +559,18 @@ class TimeLIneWidget extends StatelessWidget {
         indicatorXY: 0.3,
         indicator: Container(
           decoration: BoxDecoration(
-              color: indicatiorColor,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.black12,
-                width: 1.5,
-              )),
+            color: indicatiorColor,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.black12,
+              width: 1.5,
+            ),
+          ),
         ),
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           vertical: 0.4,
         ),
       ),
     );
   }
 }
-
-
- // TimelineTile(
-        //   alignment: TimelineAlign.manual,
-        //   lineXY: 0.08,
-        //   endChild: BuildStatusContent(
-        //     image: 'assets/images/f8a162a8cf5ae11b9b2f92d624d9c527.png',
-        //     text: 'Shipped',
-        //     subText: 'Shipped on Mar 20 2022',
-        //   ),
-        //   beforeLineStyle: LineStyle(color: Colors.black12, thickness: 3),
-        //   afterLineStyle: LineStyle(color: Colors.black12, thickness: 3),
-        //   indicatorStyle: IndicatorStyle(
-        //     color: Colors.black12,
-        //     height: 20,
-        //     width: 20,
-        //     indicator: Container(
-        //       decoration: BoxDecoration(
-        //           color: Colors.white,
-        //           shape: BoxShape.circle,
-        //           border: Border.all(
-        //             color: Colors.black12,
-        //             width: 2,
-        //           )),
-        //     ),
-        //     indicatorXY: 0.3,
-        //     padding: EdgeInsets.only(
-        //       top: 0.5,
-        //       bottom: 0.5,
-        //     ),
-        //   ),
-        // ),

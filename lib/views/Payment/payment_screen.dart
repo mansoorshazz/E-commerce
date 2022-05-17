@@ -18,7 +18,7 @@ class PaymentScreen extends StatelessWidget {
       this.productId,
       this.price,
       this.quantity,
-     required this.cartProductDetails,
+      required this.cartProductDetails,
       Key? key})
       : super(key: key);
 
@@ -160,7 +160,9 @@ class PaymentScreen extends StatelessWidget {
             style: ButtonStyle(
               backgroundColor: MaterialStateProperty.all(themeColor),
             ),
-            onPressed: () {
+            onPressed: () async {
+              final token = await razorPayController.getToken();
+
               if (productId == null && price == null && quantity == null) {
                 if (controller.selectedPayment == 0) {
                   Get.off(
@@ -175,21 +177,17 @@ class PaymentScreen extends StatelessWidget {
                       sizeOrVarient: cartProductDetails.sizeOrVarinet[i],
                       productId: docs[i]['productId'],
                       quantity: docs[i]['quantity'],
-                      orderDetails: {
-                        'ordered': true,
-                        'date': DateTime.now().millisecondsSinceEpoch
-                      },
                       shippingAddress: shippingAdress,
-                      deliverdDetails: {
-                        'delivered': false,
-                        'date': '',
-                      },
-                      shippedDetails: {
-                        'shipped': false,
-                        'date': '',
-                      },
                       paymentMethod: 'Cash On Delivery',
                       totalPrice: docs[i]['totalPrice'],
+                      ordered: true,
+                      shipped: false,
+                      delivered: false,
+                      orderedDate: DateTime.now().millisecondsSinceEpoch,
+                      createdDate: DateTime.now().millisecondsSinceEpoch,
+                      shippedDate: 0,
+                      deliveredDate: 0,
+                      token: token,
                     );
                     OrdersSample.placeOrder(
                       ordersSample,
@@ -220,15 +218,17 @@ class PaymentScreen extends StatelessWidget {
                     sizeOrVarient: cartProductDetails.sizeOrVarinet[0],
                     productId: productId!,
                     quantity: quantity!,
-                    orderDetails: {
-                      'ordered': true,
-                      'date': DateTime.now().millisecondsSinceEpoch
-                    },
                     shippingAddress: shippingAdress,
-                    deliverdDetails: {'delivered': false, 'date': ''},
-                    shippedDetails: {'shipped': false, 'date': ''},
                     paymentMethod: 'Cash On Delivery',
                     totalPrice: totalPrice,
+                    ordered: true,
+                    shipped: false,
+                    delivered: false,
+                    orderedDate: DateTime.now().millisecondsSinceEpoch,
+                    createdDate: DateTime.now().millisecondsSinceEpoch,
+                    shippedDate: 0,
+                    deliveredDate: 0,
+                    token: token,
                   );
                   OrdersSample.placeOrder(
                     ordersSample,
@@ -274,6 +274,7 @@ class PaymentScreen extends StatelessWidget {
       var formatter = NumberFormat('#,##,000');
 
       String convertPrice = formatter.format(price);
+      String totalPrice = formatter.format(price! + 150);
 
       return Padding(
         padding: EdgeInsets.all(MediaQuery.of(context).size.height * 0.03),
@@ -319,7 +320,7 @@ class PaymentScreen extends StatelessWidget {
                 ),
                 Spacer(),
                 Text(
-                  'FREE',
+                  '₹150',
                   style: TextStyle(
                     fontSize: 16,
                   ),
@@ -338,7 +339,7 @@ class PaymentScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '₹$convertPrice',
+                  '₹$totalPrice',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

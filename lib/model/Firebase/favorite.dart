@@ -25,28 +25,32 @@ class Favorites {
   ) {
     FirebaseFirestore.instance.collection('Wishlist').add(favorites.toMap());
 
-    Get.showSnackbar(
-      GetSnackBar(
-        duration: Duration(
-          milliseconds: 1800,
+    Get
+      ..closeCurrentSnackbar()
+      ..showSnackbar(
+        GetSnackBar(
+          duration: Duration(
+            milliseconds: 1800,
+          ),
+          message: '$productName added to wishlist.',
         ),
-        message: '$productName added to wishlist.',
-      ),
-    );
+      );
   }
 
   static deleteToFavorite(
       BuildContext context, String productName, String docId) async {
     await FirebaseFirestore.instance.collection('Wishlist').doc(docId).delete();
 
-    Get.showSnackbar(
-      GetSnackBar(
-        duration: const Duration(
-          milliseconds: 1800,
+    Get
+      ..closeCurrentSnackbar()
+      ..showSnackbar(
+        GetSnackBar(
+          duration: const Duration(
+            milliseconds: 1800,
+          ),
+          message: '$productName deleted from wishlist.',
         ),
-        message: '$productName deleted from wishlist.',
-      ),
-    );
+      );
 
     // ScaffoldMessenger.of(context).showSnackBar(
     //   SnackBar(

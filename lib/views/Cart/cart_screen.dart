@@ -235,7 +235,7 @@ class CartScreen extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '₹$convertedSum',
+                '₹$convertTotalSum',
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),

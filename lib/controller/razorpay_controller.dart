@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/views/Bottom%20nav/bottom_nav.dart';
 import 'package:e_commerce_app/views/Payment/widgets/payment_success.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
@@ -18,6 +20,18 @@ class RazorPayController extends GetxController {
   late String productId;
   late int quantity;
   late CartProductDetails cartProductDetails;
+  late String token;
+
+  Future<String> getToken() async {
+    final userToken = await FirebaseMessaging.instance.getToken().then((value) {
+      token = value!;
+      return value;
+    });
+    print(userToken);
+    update();
+
+    return userToken;
+  }
 
   handlePaymentSuccess(PaymentSuccessResponse response) {
     if (docs != null) {
@@ -28,19 +42,22 @@ class RazorPayController extends GetxController {
           sizeOrVarient: cartProductDetails.sizeOrVarinet[i],
           productId: docs![i]['productId'],
           quantity: docs![i]['quantity'],
-          orderDetails: {
-            'ordered': true,
-            'date': DateTime.now().millisecondsSinceEpoch
-          },
           shippingAddress: shippingAddress,
-          deliverdDetails: {'delivered': false, 'date': ''},
-          shippedDetails: {'shipped': false, 'date': ''},
           paymentMethod: 'Online Payment',
           totalPrice: docs![i]['totalPrice'],
+          ordered: true,
+          shipped: false,
+          delivered: false,
+          orderedDate: DateTime.now().millisecondsSinceEpoch,
+          createdDate: DateTime.now().millisecondsSinceEpoch,
+          shippedDate: 0,
+          deliveredDate: 0,
+          token: token,
         );
 
         OrdersSample.placeOrder(
           ordersSample,
+          docId: docs![i].id,
           productId: docs![i]['productId'],
           quantity: docs![i]['quantity'],
         );
@@ -52,15 +69,17 @@ class RazorPayController extends GetxController {
         imageUrl: cartProductDetails.imageUrl[0],
         productId: productId,
         quantity: quantity,
-        orderDetails: {
-          'ordered': true,
-          'date': DateTime.now().millisecondsSinceEpoch
-        },
         shippingAddress: shippingAddress,
-        deliverdDetails: {'delivered': false, 'date': ''},
-        shippedDetails: {'shipped': false, 'date': ''},
         paymentMethod: 'Online Payment',
         totalPrice: totalPrice,
+        ordered: true,
+        shipped: false,
+        delivered: false,
+        orderedDate: DateTime.now().millisecondsSinceEpoch,
+        createdDate: DateTime.now().millisecondsSinceEpoch,
+        shippedDate: 0,
+        deliveredDate: 0,
+        token: token,
       );
 
       OrdersSample.placeOrder(
@@ -70,15 +89,13 @@ class RazorPayController extends GetxController {
       );
     }
 
-    Get.offAll(PaymentSuccess());
+    Get.offAll(const PaymentSuccess());
   }
 
   handlePaymentError(PaymentFailureResponse response) {
-    Get.showSnackbar(GetSnackBar(
-      title: 'Message',
-      message: response.message,
-    ));
-    Get.offAll(BottomNavBar());
+    print(response.message);
+
+    // Get.back();
   }
 
   handleExternalWallet() {}

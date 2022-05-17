@@ -35,7 +35,7 @@ class BuildStatusContent extends StatelessWidget {
             width: 40,
           ),
           SizedBox(
-            width: 10,
+            width: 20,
           ),
           Column(
             mainAxisSize: MainAxisSize.min,

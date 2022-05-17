@@ -32,6 +32,7 @@ class OrderScreen extends StatelessWidget {
                 'userId',
                 isEqualTo: FirebaseAuth.instance.currentUser!.uid,
               )
+              .orderBy('createdDate', descending: false)
               .snapshots(),
           builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -48,73 +49,57 @@ class OrderScreen extends StatelessWidget {
 
             return ListView.separated(
               physics: BouncingScrollPhysics(),
-              separatorBuilder: (context, index) => Divider(
+              separatorBuilder: (context, index) => const Divider(
                 height: 20,
               ),
               itemCount: docsLength,
               itemBuilder: (context, index) {
                 final orderDoc = snapshot.data!.docs[index];
 
-                return StreamBuilder(
-                    stream: FirebaseFirestore.instance
-                        .collection('Products')
-                        .doc(orderDoc['productId'])
-                        .snapshots(),
-                    builder: (context, AsyncSnapshot psnapshot) {
-                      if (psnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return Container();
-                      }
+                final date = DateTime.fromMillisecondsSinceEpoch(
+                  orderDoc['orderedDate'],
+                );
 
-                      final doc = psnapshot.data;
-                      if (psnapshot.data == null) {
-                        return const LoadingShimmer();
-                      }
+                final formatedDate = DateFormat.yMMMd().format(date);
 
-                      final date = DateTime.fromMillisecondsSinceEpoch(
-                        orderDoc['orderDetails']['date'],
-                      );
-
-                      final formatedDate = DateFormat.yMMMd().format(date);
-
-                      return ListTile(
-                        onTap: () => Get.to(
-                          OrderDetailsScreen(
-                            productId: orderDoc['productId'],
-                            quantity: orderDoc['quantity'],
-                            address: orderDoc['shippingAddress'],
-                            totalPrice: orderDoc['totalPrice'],
-                            documentId: orderDoc.id,
-                          ),
-                          transition: Transition.leftToRight,
-                        ),
-                        leading: Padding(
-                          padding: const EdgeInsets.only(left: 10),
-                          child: Image.network(
-                            doc['imageUrls'][0],
-                          ),
-                        ),
-                        title: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text(
-                            'Ordered on $formatedDate',
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        subtitle: Text(
-                          doc['productName'],
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
-                        ),
-                        trailing: Icon(
-                          CupertinoIcons.chevron_forward,
-                          size: 15,
-                        ),
-                      );
-                    });
+                return ListTile(
+                  onTap: () => Get.to(
+                    OrderDetailsScreen(
+                      productId: orderDoc['productId'],
+                      quantity: orderDoc['quantity'],
+                      address: orderDoc['shippingAddress'],
+                      totalPrice: orderDoc['totalPrice'],
+                      documentId: orderDoc.id,
+                    ),
+                    transition: Transition.leftToRight,
+                  ),
+                  leading: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Image.network(
+                      orderDoc['imageUrl'],
+                    ),
+                  ),
+                  title: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      'Ordered on $formatedDate',
+                      style: TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  subtitle: Text(
+                    orderDoc['productName'],
+                    style: TextStyle(
+                      fontSize: 16,
+                    ),
+                  ),
+                  trailing: Icon(
+                    CupertinoIcons.chevron_forward,
+                    size: 15,
+                  ),
+                );
+                // });
               },
             );
           }),

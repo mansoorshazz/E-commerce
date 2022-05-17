@@ -1,5 +1,6 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cool_alert/cool_alert.dart';
 import 'package:e_commerce_app/core/colors.dart';
 import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/model/Firebase/favorite.dart';
@@ -283,8 +284,8 @@ class ProductViewScreen extends StatelessWidget {
                 .where('userId',
                     isEqualTo: FirebaseAuth.instance.currentUser!.uid)
                 .where(
-                  'productName',
-                  isEqualTo: productName,
+                  'productId',
+                  isEqualTo: docId,
                 )
                 .snapshots(),
             builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -299,24 +300,14 @@ class ProductViewScreen extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(5),
                   ),
-                  child: Center(
-                    child: Text(
-                      'Add to cart',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: themeColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
                 );
               }
 
               final dataLength = snapshot.data!.docs.length;
 
-              return Bounce(
-                onPressed: () {
-                  if (dataLength == 0) {
+              if (dataLength == 0) {
+                return Bounce(
+                  onPressed: () {
                     Cart cart = Cart(
                       totalPrice: price,
                       productId: docId,
@@ -328,36 +319,98 @@ class ProductViewScreen extends StatelessWidget {
                       context: context,
                       docId: docId,
                     );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        duration: Duration(seconds: 1),
-                        content: Text('$productName already in cart'),
-                      ),
-                    );
-                  }
-                },
-                duration: Duration(milliseconds: 150),
-                child: Container(
-                  height: mediaQuery.height * 0.06,
-                  width: mediaQuery.width * 0.45,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      width: 2,
-                      color: themeColor,
-                    ),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Add to cart',
-                      style: TextStyle(
-                        fontSize: 18,
+                  },
+                  duration: Duration(milliseconds: 150),
+                  child: Container(
+                    height: mediaQuery.height * 0.06,
+                    width: mediaQuery.width * 0.45,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        width: 2,
                         color: themeColor,
-                        fontWeight: FontWeight.w500,
+                      ),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Add to cart',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: themeColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
+                );
+              }
+
+              final cartMap = snapshot.data!.docs[0];
+
+              return Container(
+                height: mediaQuery.height * 0.06,
+                width: mediaQuery.width * 0.45,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    width: 2,
+                    color: themeColor,
+                  ),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      onPressed: cartMap['quantity'] == 1
+                          ? null
+                          : () {
+                              Cart.decreaseQuantity(
+                                cartMap.id,
+                                cartMap['quantity'] - 1,
+                                price,
+                                totalPrice: cartMap['totalPrice'],
+                              );
+                            },
+                      icon: const Icon(
+                        CupertinoIcons.minus,
+                        size: 20,
+                      ),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                    ),
+                    Text(
+                      cartMap['quantity'].toString(),
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (cartMap['quantity'] == 5) {
+                          CoolAlert.show(
+                            context: context,
+                            type: CoolAlertType.warning,
+                            animType: CoolAlertAnimType.slideInLeft,
+                            text: "You can't purchase 5 more quantities!",
+                          );
+                        } else {
+                          Cart.increaseQuantity(
+                            cartMap.id,
+                            cartMap['quantity'] + 1,
+                            price,
+                          );
+                        }
+                      },
+                      icon: const Icon(
+                        CupertinoIcons.add,
+                        size: 22,
+                      ),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                    )
+                  ],
                 ),
               );
             }),

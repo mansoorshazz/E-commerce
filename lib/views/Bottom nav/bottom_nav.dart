@@ -13,7 +13,7 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: Colors.grey.shade300,
       child: SafeArea(
         child: Scaffold(
             bottomNavigationBar: PersistentTabView(

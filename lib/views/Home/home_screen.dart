@@ -1,22 +1,19 @@
 import 'dart:io';
-
 import 'package:badges/badges.dart';
-import 'package:clay_containers/clay_containers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/controller/home_controller.dart';
 import 'package:e_commerce_app/core/colors.dart';
 import 'package:e_commerce_app/views/Cart/cart_screen.dart';
 import 'package:e_commerce_app/views/Home/widgets/shimmer_loading.dart';
 import 'package:e_commerce_app/views/Product%20view/product_view.dart';
+import 'package:e_commerce_app/views/Search/search_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bounce/flutter_bounce.dart';
 import 'package:get/get.dart';
 import 'package:like_button/like_button.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-
 import '../../model/Firebase/favorite.dart';
 import 'widgets/product_loading.dart';
 
@@ -37,8 +34,6 @@ class HomeScreen extends StatelessWidget {
     return Container(
       color: Colors.grey.shade100,
       child: SafeArea(
-        // child: Scaffold(
-        // body:
         child: NestedScrollView(
           floatHeaderSlivers: true,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -488,9 +483,16 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         title: SizedBox(
           height: mediaQuery.height * 0.055,
-          child: const TextField(
+          child: TextField(
             enabled: true,
-            decoration: InputDecoration(
+            readOnly: true,
+            onTap: () {
+              print('tapped');
+              Get.to(
+                SearchScreen(),
+              );
+            },
+            decoration: const InputDecoration(
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: Colors.black12,
@@ -498,7 +500,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               prefixIcon: Padding(
-                padding: const EdgeInsets.only(top: 3),
+                padding: EdgeInsets.only(top: 3),
                 child: Icon(CupertinoIcons.search),
               ),
               contentPadding: EdgeInsets.all(10),

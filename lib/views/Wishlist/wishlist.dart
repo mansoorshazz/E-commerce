@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/core/colors.dart';
+import 'package:e_commerce_app/model/Firebase/cart.dart';
 import 'package:e_commerce_app/model/Firebase/favorite.dart';
 import 'package:e_commerce_app/views/Product%20view/product_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -73,14 +74,14 @@ class WishListScreen extends StatelessWidget {
                 isEqualTo: userUid,
               )
               .snapshots(),
-          builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, AsyncSnapshot<QuerySnapshot> wishlistsnapshot) {
+            if (wishlistsnapshot.connectionState == ConnectionState.waiting) {
               return Center(
                 child: CircularProgressIndicator(),
               );
             }
 
-            if (snapshot.data!.docs.isEmpty) {
+            if (wishlistsnapshot.data!.docs.isEmpty) {
               return Center(
                 child: Lottie.network(
                   'https://assets2.lottiefiles.com/private_files/lf30_oqpbtola.json',
@@ -91,9 +92,9 @@ class WishListScreen extends StatelessWidget {
             return ListView.separated(
               physics: const BouncingScrollPhysics(),
               separatorBuilder: (context, index) => Divider(),
-              itemCount: snapshot.data!.docs.length,
+              itemCount: wishlistsnapshot.data!.docs.length,
               itemBuilder: (context, index) {
-                final doc = snapshot.data!.docs[index];
+                final doc = wishlistsnapshot.data!.docs[index];
 
                 return StreamBuilder(
                     stream: FirebaseFirestore.instance
@@ -128,85 +129,94 @@ class WishListScreen extends StatelessWidget {
                             fontSize: 16,
                           ),
                         ),
-                        trailing: IconButton(
-                          onPressed: () {
-                            Get.bottomSheet(
-                              Container(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.15,
-                                color: Colors.white,
-                                child: Column(
-                                  children: [
-                                    ListTile(
-                                      onTap: () {
-                                        Get.back();
-                                        showAnimatedDialog(
-                                          context: context,
-                                          barrierDismissible: true,
-                                          builder: (BuildContext context) {
-                                            return ClassicGeneralDialogWidget(
-                                              titleText: 'Delete!',
-                                              contentText:
-                                                  'Are you sure to delete ${doc['productName']} from wishlist ?',
-                                              positiveText: 'YES',
-                                              negativeText: 'NO',
-                                              positiveTextStyle:
-                                                  const TextStyle(
-                                                color: Colors.green,
-                                              ),
-                                              negativeTextStyle:
-                                                  const TextStyle(
-                                                color: Colors.red,
-                                              ),
-                                              onPositiveClick: () {
-                                                Navigator.of(context).pop();
+                        trailing: Builder(builder: (context) {
+                          return IconButton(
+                            onPressed: () {
+                              Get.bottomSheet(
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.15,
+                                  color: Colors.white,
+                                  child: Column(
+                                    children: [
+                                      ListTile(
+                                        onTap: () {
+                                          Get.back();
+                                          showAnimatedDialog(
+                                            context: context,
+                                            barrierDismissible: true,
+                                            builder: (BuildContext context) {
+                                              return ClassicGeneralDialogWidget(
+                                                titleText: 'Delete!',
+                                                contentText:
+                                                    'Are you sure to delete ${productMap['productName']} from wishlist ?',
+                                                positiveText: 'YES',
+                                                negativeText: 'NO',
+                                                positiveTextStyle:
+                                                    const TextStyle(
+                                                  color: Colors.green,
+                                                ),
+                                                negativeTextStyle:
+                                                    const TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                                onPositiveClick: () {
+                                                  Navigator.of(context).pop();
 
-                                                Future.delayed(
-                                                  const Duration(seconds: 1),
-                                                  () {
-                                                    Favorites.deleteToFavorite(
-                                                      context,
-                                                      doc['productName'],
-                                                      doc.id,
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              onNegativeClick: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            );
-                                          },
-                                          animationType: DialogTransitionType
-                                              .slideFromLeftFade,
-                                          curve: Curves.fastOutSlowIn,
-                                          duration: Duration(seconds: 1),
-                                        );
-                                      },
-                                      leading: Icon(
-                                        Icons.delete,
-                                        color: Colors.black,
+                                                  Future.delayed(
+                                                    const Duration(seconds: 1),
+                                                    () {
+                                                      Favorites
+                                                          .deleteToFavorite(
+                                                        context,
+                                                        productMap[
+                                                            'productName'],
+                                                        doc.id,
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                onNegativeClick: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              );
+                                            },
+                                            animationType: DialogTransitionType
+                                                .slideFromLeftFade,
+                                            curve: Curves.fastOutSlowIn,
+                                            duration: Duration(seconds: 1),
+                                          );
+                                        },
+                                        leading: Icon(
+                                          Icons.delete,
+                                          color: Colors.black,
+                                        ),
+                                        title:
+                                            const Text('Remove from wishlist'),
                                       ),
-                                      title: Text('Remove from wishlist'),
-                                    ),
-                                    ListTile(
-                                      onTap: () {},
-                                      leading: Icon(
-                                        Icons.shopping_cart,
-                                        color: Colors.black,
+                                      ListTile(
+                                        onTap: () {
+                                          //  Cart cart = Cart(productId: doc.id, quantity: doc['quantiy'], totalPrice: doc['price']);
+
+                                          // Cart.addToCart(cart: cart, productName: productName, context: context, docId: docId)
+                                        },
+                                        leading: Icon(
+                                          Icons.shopping_cart,
+                                          color: Colors.black,
+                                        ),
+                                        title: Text('Add to cart'),
                                       ),
-                                      title: Text('Add to cart'),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: Colors.black,
-                          ),
-                        ),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: Colors.black,
+                            ),
+                          );
+                        }),
                         onTap: () {
                           Get.to(
                             ProductViewScreen(

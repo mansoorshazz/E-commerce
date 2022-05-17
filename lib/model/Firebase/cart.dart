@@ -177,14 +177,16 @@ class Cart {
           cart.toMap(),
         );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: Duration(seconds: 1),
-        content: Text(
-          '$productName added  to cart!',
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: Duration(seconds: 1),
+          content: Text(
+            '$productName added  to cart!',
+          ),
         ),
-      ),
-    );
+      );
   }
 
   static deleteFromCart({
@@ -218,13 +220,15 @@ class Cart {
                     .doc(docId)
                     .delete();
 
-                Get.showSnackbar(
-                  GetSnackBar(
-                    title: 'Message',
-                    message: '$productName deleted from cart!',
-                    duration: Duration(milliseconds: 1500),
-                  ),
-                );
+                Get
+                  ..closeCurrentSnackbar()
+                  ..showSnackbar(
+                    GetSnackBar(
+                      title: 'Message',
+                      message: '$productName deleted from cart!',
+                      duration: Duration(milliseconds: 1500),
+                    ),
+                  );
               },
             );
           },
@@ -259,8 +263,6 @@ class Cart {
     required int totalPrice,
   }) {
     int total = changedQuantity * price;
-
-    print(total);
 
     FirebaseFirestore.instance.collection('Carts').doc(docId).update(
       {
